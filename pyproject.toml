@@ -1,0 +1,24 @@
+[build-system]
+requires      = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
+
+[project]
+name        = "inertia-scanner"
+version     = "1.0.0"
+description = "Inertia — Fast hybrid Rust+Python port scanner (TCP + UDP)"
+readme      = "README.md"
+license     = { text = "MIT" }
+requires-python = ">=3.8"
+dependencies = [
+    "rich>=13.0",
+    "typer>=0.12",
+    "jinja2>=3.1",
+]
+
+[project.scripts]
+inertia = "inertia.__main__:main"
+
+[tool.maturin]
+python-source = "."
+module-name   = "inertia.inertia_core"
+features      = ["pyo3/abi3-py38"]

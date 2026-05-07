@@ -1,0 +1,20 @@
+[package]
+name        = "inertia_core"
+version     = "1.0.0"
+edition     = "2021"
+description = "Inertia — Rust async scan core (TCP + UDP)"
+license     = "MIT"
+
+[lib]
+name       = "inertia_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3    = { version = "0.21", features = ["abi3-py38"] }
+tokio   = { version = "1",    features = ["full"] }
+futures = "0.3"
+
+[profile.release]
+opt-level     = 3
+lto           = true
+codegen-units = 1
