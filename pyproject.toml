@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name        = "inertia-scanner"
-version     = "1.0.0"
+version     = "1.1.1"
 description = "Inertia — Fast hybrid Rust+Python port scanner (TCP + UDP)"
 readme      = "README.md"
 license     = { text = "MIT" }
