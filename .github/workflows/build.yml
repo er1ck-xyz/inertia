@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-windows-macos:
+  build:
     name: ${{ matrix.os }} / py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -27,67 +27,16 @@ jobs:
           name: wheel-${{ matrix.os }}-py${{ matrix.python-version }}
           path: dist/*.whl
 
-  build-linux:
-    name: ubuntu / py${{ matrix.python-version }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Build wheel
-        run: maturin build --release --out dist/ --features pyo3/extension-module
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: wheel-ubuntu-py${{ matrix.python-version }}
-          path: dist/*.whl
-
   publish:
-    needs: [build-windows-macos, build-linux]
+    needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: wheel-*
           path: dist/
           merge-multiple: true
-
-      - name: Verificar e limpar wheels corrompidas
-        run: |
-          python3 - <<'EOF'
-          import zipfile, os, glob
-
-          wheels = glob.glob("dist/**/*.whl", recursive=True) + glob.glob("dist/*.whl")
-          seen = {}
-
-          for path in wheels:
-              name = os.path.basename(path)
-              try:
-                  with zipfile.ZipFile(path) as z:
-                      z.testzip()
-                  if name not in seen:
-                      seen[name] = path
-                      print(f"OK: {path}")
-                  else:
-                      os.remove(path)
-                      print(f"REMOVED DUPLICATE: {path}")
-              except Exception as e:
-                  os.remove(path)
-                  print(f"REMOVED CORRUPT: {path} — {e}")
-          EOF
-
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
