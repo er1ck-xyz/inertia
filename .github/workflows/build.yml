@@ -59,12 +59,29 @@ jobs:
           path: dist/
           merge-multiple: true
 
-      - name: Remove duplicate wheels
+      - name: Verificar e limpar wheels corrompidas
         run: |
-          cd dist
-          ls -la
-          find . -name "*.whl" | sort | uniq -d | xargs rm -f || true
-          ls -la
+          python3 - <<'EOF'
+          import zipfile, os, glob
+
+          wheels = glob.glob("dist/**/*.whl", recursive=True) + glob.glob("dist/*.whl")
+          seen = {}
+
+          for path in wheels:
+              name = os.path.basename(path)
+              try:
+                  with zipfile.ZipFile(path) as z:
+                      z.testzip()
+                  if name not in seen:
+                      seen[name] = path
+                      print(f"OK: {path}")
+                  else:
+                      os.remove(path)
+                      print(f"REMOVED DUPLICATE: {path}")
+              except Exception as e:
+                  os.remove(path)
+                  print(f"REMOVED CORRUPT: {path} — {e}")
+          EOF
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
