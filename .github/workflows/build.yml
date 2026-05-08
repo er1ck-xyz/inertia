@@ -6,13 +6,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-windows-macos:
     name: ${{ matrix.os }} / py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, macos-latest]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
@@ -27,8 +27,30 @@ jobs:
           name: wheel-${{ matrix.os }}-py${{ matrix.python-version }}
           path: dist/*.whl
 
+  build-linux:
+    name: ubuntu / py${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          args: --release --out dist/
+          manylinux: auto
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel-ubuntu-py${{ matrix.python-version }}
+          path: dist/*.whl
+
   publish:
-    needs: build
+    needs: [build-windows-macos, build-linux]
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     steps:
