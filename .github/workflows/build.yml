@@ -36,14 +36,19 @@ jobs:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: PyO3/maturin-action@v1
-        with:
-          command: build
-          args: --release --out dist/
-          manylinux: auto
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install maturin
+        run: pip install maturin
+
+      - name: Build wheel
+        run: maturin build --release --out dist/ --features pyo3/extension-module
+
       - uses: actions/upload-artifact@v4
         with:
           name: wheel-ubuntu-py${{ matrix.python-version }}
