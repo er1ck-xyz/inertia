@@ -6,49 +6,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: ${{ matrix.os }} / py${{ matrix.python-version }}
+  build-and-publish:
+    name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
-        python-version: ["3.11"]
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - run: pip install maturin
+      - name: Install maturin and twine
+        run: pip install maturin twine
 
-      - run: maturin build --release --out dist/
+      - name: Build wheel
+        run: maturin build --release --out dist/
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: wheel-${{ matrix.os }}
-          path: dist/
-          if-no-files-found: error
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: wheel-*
-          merge-multiple: true
-          path: wheelhouse/
-
-      - name: Listar wheels
-        run: find wheelhouse/ -name "*.whl"
-
-      - uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          packages-dir: wheelhouse/
-          skip-existing: true
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload --skip-existing dist/*.whl
